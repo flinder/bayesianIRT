@@ -1,0 +1,22 @@
+data {
+  int<lower=1> J; // number of students
+  int<lower=1> K; // number of questions
+  int<lower=1> N; // number of observations
+  int<lower=1,upper=J> jj[N]; // student for observation n
+  int<lower=1,upper=K> kk[N]; // question for observation n
+  int<lower=0,upper=1> Y[N]; // correctness for observation n
+}
+parameters {
+  real<lower=0> alpha[K]; // discrimination parameters
+  real beta[K]; // difficulty parameters
+  real<lower=0,upper=1> gamma[K]; // guessing parameter
+  real theta[J]; // student ability parameters
+}
+model {
+  alpha ~ lognormal(0.9, 0.5); // informative true prior
+  beta ~ normal(0.2, 0.1); // informative true prior
+  gamma ~ uniform(0, 1); // guessing parameter
+  theta ~ normal(0, 1); // informative true prior
+  for (n in 1:N)
+    Y[n] ~ bernoulli(gamma[kk[n]] + (1 - gamma[kk[n]])/(1 + exp( - alpha[kk[n]] * (theta[jj[n]] - beta[kk[n]]))));
+}
