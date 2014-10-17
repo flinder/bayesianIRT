@@ -9,14 +9,12 @@ data {
 parameters {
   real<lower=0> alpha[K]; // discrimination parameters
   real beta[K]; // difficulty parameters
-  real<lower=0,upper=1> gamma[K]; // guessing parameter
   real theta[J]; // student ability parameters
 }
 model {
   alpha ~ lognormal(0, 6); 
   beta ~ normal(0, 1); 
-  gamma ~ beta(5, 17); 
   theta ~ normal(0, 1); 
   for (n in 1:N)
-    Y[n] ~ bernoulli(gamma[kk[n]] + (1 - gamma[kk[n]])/(1 + exp( - alpha[kk[n]] * (theta[jj[n]] - beta[kk[n]]))));
+    Y[n] ~ bernoulli(1 / (1 + exp( - alpha[kk[n]] * (theta[jj[n]] - beta[kk[n]]))));
 }

@@ -1,0 +1,18 @@
+model {
+		for (j in 1 : J) {
+			for (k in 1 : K) {
+				p[j, k] <- 1 / (1 + exp( - zeta[1, k] * (theta[j] - zeta[, k])));
+				Y[j, k] ~ dbern(p[j, k]);
+			}
+		# Priors	
+			theta[j] ~ dnorm(mu_t, 1 / tau_t);
+		}
+		for (k in 1:K) {
+			zeta[, k] ~ dmnorm(mu_z, inverse(tau_z));
+		}
+		# Hyperpriors
+		tau_t ~ dgamma(2, 2);
+		mu_t ~ dnorm(0, 1 / tau_t);
+		tau_z ~ dwish(sigma_0, 2)
+		mu_z ~ dmnorm(mu_0, inverse(tau_z) / 0.1);
+	}

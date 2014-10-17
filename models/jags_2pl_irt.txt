@@ -1,0 +1,13 @@
+model {
+		for (j in 1 : J) {
+			for (k in 1 : K) {
+				p[j, k] <- 1 / (1 + exp( - alpha[k] * (theta[j] - beta[k])));
+				Y[j, k] ~ dbern(p[j, k]);
+			}
+			theta[j] ~ dnorm(0, 1);
+		}
+		for (k in 1:K) {
+			alpha[k] ~ dlnorm(0, 6);
+      		beta[k] ~ dnorm(0, 1);
+		}
+	}
