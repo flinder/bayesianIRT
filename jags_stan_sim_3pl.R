@@ -77,7 +77,7 @@ jagspost1 <- jags.res[[2]][1][[1]]
 
 
 plot_pmeans(jagspost1, K, J, tpar, "jags_3pl")
-ggsave('plots/jags_3pl.pdf')
+ggsave('plots/jags_3pl.png')
 
 ## STAN
 fileName <- "models/stan_3pl_irt.txt"
@@ -92,7 +92,7 @@ data.stan <- list("J" = J,
                   )
 t.stan <- system.time(
   stan.res <- stan(model_code = model, model_name = "stan_3pl", data = data.stan, 
-                   iter = 2000, warmup = 500, chains = 1, verbose = TRUE)
+                   iter = 5000, warmup = 1000, chains = 1, verbose = TRUE)
   )
 
 
@@ -100,7 +100,7 @@ stanpost <- do.call(cbind,stan.res@sim$samples[[1]][- (J + 3 * K + 1)])
 
 # Plot posterior means
 plot_pmeans(stanpost, K, J, tpar, "stan_3pl")
-ggsave('plots/stan_3pl.pdf')
+ggsave('plots/stan_3pl.png')
 
 ##########################
 # With hierarchical priors

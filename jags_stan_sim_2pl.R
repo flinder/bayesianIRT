@@ -73,7 +73,7 @@ plot_pmeans <- function(mcmcres, K, J, tpar, title=''){
 jagspost1 <- jags.res[[2]][1][[1]]
 
 plot_pmeans(jagspost1, K, J, tpar, '2pl jags') # From chain 1
-ggsave('plots/jags_2pl.pdf')
+ggsave('plots/jags_2pl.png')
 
 ## STAN
 fileName <- "models/stan_2pl_irt.txt"
@@ -95,4 +95,4 @@ stanpost <- do.call(cbind,res.stan@sim$samples[[1]][- (J + 2 * K + 1)])
 
 # Plot posterior means
 plot_pmeans(stanpost, K, J, tpar, '2pl stan')
-ggsave('plots/stan_2pl.pdf')
+ggsave('plots/stan_2pl.png')
