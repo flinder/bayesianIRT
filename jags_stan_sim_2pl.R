@@ -13,7 +13,7 @@ setwd("C:/Users/samsung/Dropbox/bd_irt/bayesianIRT")
 
 ### Generate some data according to:
 # Y[j, k] ~ Bern(pi[j, k])
-# pi[j, k] = gamma[k] + (1 - gamma[k])/(1 + exp(-alpha[k] * (theta[j] - beta[k])))
+# pi[j, k] = 1/(1 + exp(-alpha[k] * (theta[j] - beta[k])))
 
 J <- 300 # Number of subjects
 K <- 20 # Number of items
@@ -38,17 +38,13 @@ data.jags <- list("J" = J, "K" = K, "Y" = Y)
 inits <- list(list("alpha" = rep(1, K), # For chain 1
                    "beta" = rnorm(K, 0, 1.5), 
                    "theta" = rnorm(J)
-                   ),
-              list("alpha" = rep(3, K), # For chain 2
-                   "beta" = rnorm(K, -2, 1.5), 
-                   "theta" = rnorm(J)
-                  )
+                   )
               )
 par.tosave <- c("alpha", "beta", "theta")
 
 f <- function(){
   jmod <- jags.model(file = "models/jags_2pl_irt.txt", data = data.jags, 
-                     inits = inits, n.chains = 2, n.adapt = 1000)
+                     inits = inits, n.chains = 1, n.adapt = 1000)
   mcmcres <- coda.samples(model = jmod, variable.names = par.tosave, 
                           n.iter = 5000, thin = 1)
   list(jmod, mcmcres)
@@ -56,7 +52,7 @@ f <- function(){
 t.jags <- system.time(jags.res <- f())
 
 # Plot results
-plot_pmeans <- function(mcmcres, K, J, tpar){
+plot_pmeans <- function(mcmcres, K, J, tpar, title=''){
   grp = c(rep("alpha", K), rep("beta",K), rep("theta", J))
   post.m <- apply(mcmcres, 2, mean)
   post.q <- apply(mcmcres, 2, quantile, c(0.025, 0.975))
@@ -70,14 +66,14 @@ plot_pmeans <- function(mcmcres, K, J, tpar){
   p <- p + facet_wrap(~ est, ncol = 2, scales = "free")
   p <- p + labs(x = "True value", y = "Posterior Mean")
   p <- p + theme_bw()
+  p <- p + ggtitle(title)
   p
 }
 
 jagspost1 <- jags.res[[2]][1][[1]]
-jagspost2 <- jags.res[[2]][2][[1]]
 
-plot_pmeans(jagspost1, K, J, tpar) # From chain 1
-
+plot_pmeans(jagspost1, K, J, tpar, '2pl jags') # From chain 1
+ggsave('plots/jags_2pl.pdf')
 
 ## STAN
 fileName <- "models/stan_2pl_irt.txt"
@@ -92,10 +88,11 @@ data.stan <- list("J" = J,
                   )
 t.stan <- system.time(
   res.stan <- stan(model_code = model, model_name = "stan_3pl", data = data.stan, 
-                   iter = 2000, warmup = 500, chains = 1, verbose = TRUE)
+                   iter = 5000, warmup = 1000, chains = 1, verbose = TRUE)
   )
 
 stanpost <- do.call(cbind,res.stan@sim$samples[[1]][- (J + 2 * K + 1)])
 
 # Plot posterior means
-plot_pmeans(stanpost, K, J, tpar)
+plot_pmeans(stanpost, K, J, tpar, '2pl stan')
+ggsave('plots/stan_2pl.pdf')
