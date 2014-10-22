@@ -7,8 +7,10 @@ model {
 			theta[j] ~ dnorm(0, 1);
 		}
 		for (k in 1:K) {
-			alpha[k] ~ dlnorm(0, 6);
-      		beta[k] ~ dnorm(0, 1);
-			gamma[k] ~ dbeta(5, 17);
+			alpha[k] ~ dnorm(0, pr.alpha)I(0, );
+      		beta[k] ~ dnorm(0, pr.beta);
+			gamma[k] ~ dbeta(a.gamma, b.gamma);
 		}
+	    pr.alpha <- 1 / v.alpha
+		pr.beta <- 1 / v.beta
 	}

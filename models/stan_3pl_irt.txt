@@ -7,7 +7,7 @@ data {
   int<lower=0,upper=1> Y[N]; // correctness for observation n
 }
 parameters {
-  real<lower=0> alpha[K]; // discrimination parameters
+  real<lower=0, upper=5> alpha[K]; // discrimination parameters
   real beta[K]; // difficulty parameters
   real<lower=0,upper=1> gamma[K]; // guessing parameter
   real theta[J]; // student ability parameters

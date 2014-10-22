@@ -33,7 +33,8 @@ ps <- apply(tpar, 2, ip, theta = theta)
 Y <- apply(ps, 2, rbinom, n = J, size = 1)
 
 ## JAGS
-data.jags <- list("J" = J, "K" = K, "Y" = Y)
+data.jags <- list("J" = J, "K" = K, "Y" = Y, "a.gamma" = 5, "b.gamma" = 17, 
+                  "v.alpha" = 2, "v.beta" = 2)
 
 # Starting values
 inits <- list(list("alpha" = rep(1, K), # For chain 1
