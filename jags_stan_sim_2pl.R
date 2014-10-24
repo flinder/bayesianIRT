@@ -12,6 +12,9 @@ set.seed(2377344)
 setwd("C:/Users/samsung/Dropbox/bd_irt/bayesianIRT")
 #setwd("C:/Users/flinder/Dropbox/bd_irt/bayesianIRT")
 
+# Load plot function
+source("plot_pmeans.R")
+
 ### Generate some data according to:
 # Y[j, k] ~ Bern(pi[j, k])
 # pi[j, k] = 1/(1 + exp(-alpha[k] * (theta[j] - beta[k])))
@@ -53,27 +56,9 @@ f <- function(){
 t.jags <- system.time(jags.res <- f())
 
 # Plot results
-plot_pmeans <- function(mcmcres, K, J, tpar, title=''){
-  grp = c(rep("alpha", K), rep("beta",K), rep("theta", J))
-  post.m <- apply(mcmcres, 2, mean)
-  post.q <- apply(mcmcres, 2, quantile, c(0.025, 0.975))
-  pdat = data.frame("est" = grp, 
-                    "true" = c(tpar[1, ], tpar[2, ], theta), 
-                    "pmean" = post.m, "lwr" = post.q[1, ], 
-                    "upr" = post.q[2, ])
-  p <- ggplot(pdat, aes(true, pmean))
-  p <- p + geom_point()
-  p <- p + geom_errorbar(aes(ymin = lwr, y = pmean, ymax = upr), width = 0, size = .5)
-  p <- p + facet_wrap(~ est, ncol = 2, scales = "free")
-  p <- p + labs(x = "True value", y = "Posterior Mean")
-  p <- p + theme_bw()
-  p <- p + ggtitle(title)
-  p
-}
-
 jagspost1 <- jags.res[[2]][1][[1]]
 
-plot_pmeans(jagspost1, K, J, tpar, '2pl jags') # From chain 1
+plot_pmeans(jagspost1, K, J, tpar, theta, '2pl jags') # From chain 1
 ggsave('plots/jags_2pl.png')
 
 ## STAN
@@ -95,7 +80,7 @@ t.stan <- system.time(
 stanpost <- do.call(cbind,res.stan@sim$samples[[1]][- (J + 2 * K + 1)])
 
 # Plot posterior means
-plot_pmeans(stanpost, K, J, tpar, '2pl stan')
+plot_pmeans(stanpost, K, J, tpar, theta, '2pl stan')
 ggsave('plots/stan_2pl.png')
 
 ##
@@ -125,6 +110,7 @@ t.jags.h <- system.time(jags.res.h <- f())
 jagspost_h <- jags.res.h[[2]][1][[1]]
 jagspost_h[, 1:20] <- exp(jagspost_h[, 1:20])
 
-plot_pmeans(jagspost_h, K, J, tpar, "2pl jags hierarchical item prios") 
+
+plot_pmeans(jagspost_h, K, J, tpar, theta, "2pl jags hierarchical item prios") 
 ggsave("plots/jags_2pl_h.png")
 save.image('res_2pl.RData')

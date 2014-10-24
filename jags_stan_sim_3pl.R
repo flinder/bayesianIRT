@@ -8,26 +8,29 @@ library(ggplot2)
 
 set.seed(3439109)
 
-setwd("C:/Users/samsung/Dropbox/bd_irt/bayesianIRT")
-#setwd("C:/Users/flinder/Dropbox/bd_irt/bayesianIRT")
+#setwd("C:/Users/samsung/Dropbox/bd_irt/bayesianIRT")
+setwd("C:/Users/flinder/Dropbox/bd_irt/bayesianIRT")
+
+# Load plot function
+source("plot_pmeans.R")
 
 ### Generate some data according to:
 # Y[j, k] ~ Bern(pi[j, k])
 # pi[j, k] = gamma[k] + (1 - gamma[k])/(1 + exp(-alpha[k] * (theta[j] - beta[k])))
  
 
-J <- 3000 # Number of subjects
-K <- 200 # Number of items
+J <- 100 # Number of subjects
+K <- 10 # Number of items
 N <- J * K # Number of observations
 theta <- rnorm(J, 0, 1) # Ability scores
 
 ## True item-parameter matrix
-# 1 gamma:Guessing # 2 alpha:Discrimination # 3 beta:Difficulty 
-tpar <- rbind(rbeta(K, 3, 8), rlnorm(K, -0.3, 0.3), rnorm(K, 0, 1))
+# 1 alpha:Discrimination # 2  beta:Difficulty # 3 gamma:Guessing 
+tpar <- rbind(rlnorm(K, -0.3, 0.3), rnorm(K, 0, 1), rbeta(K, 3, 8))
 
 # Draw data
 ip <- function(tpar, theta){
-  tpar[1] + (1 - tpar[1]) / (1 + exp( - tpar[2] * (theta - tpar[3])))
+  tpar[3] + (1 - tpar[3]) / (1 + exp( - tpar[1] * (theta - tpar[2])))
 } 
 ps <- apply(tpar, 2, ip, theta = theta)
 Y <- apply(ps, 2, rbinom, n = J, size = 1)
@@ -56,28 +59,10 @@ t.jags <- system.time(jags.res <- f())
 
 
 # Plot results
-plot_pmeans <- function(mcmcres, K, J, tpar, title=''){
-  grp = c(rep("alpha", K), rep("beta",K), rep("gamma", K), rep("theta", J))
-  post.m <- apply(mcmcres, 2, mean)
-  post.q <- apply(mcmcres, 2, quantile, c(0.025, 0.975))
-  pdat = data.frame("est" = grp, 
-                    "true" = c(tpar[2, ], tpar[3, ], tpar[1, ], theta), 
-                    "pmean" = post.m, "lwr" = post.q[1, ], 
-                    "upr" = post.q[2, ])
-  p <- ggplot(pdat, aes(true, pmean))
-  p <- p + geom_point()
-  p <- p + geom_errorbar(aes(ymin = lwr, y = pmean, ymax = upr), width = 0, size = .5)
-  p <- p + facet_wrap(~ est, ncol = 2, scales = "free")
-  p <- p + labs(x = "True value", y = "Posterior Mean")
-  p <- p + theme_bw()
-  p <- p + ggtitle(title)
-  p
-}
-
 jagspost1 <- jags.res[[2]][1][[1]]
 
 
-plot_pmeans(jagspost1, K, J, tpar, "jags_3pl")
+plot_pmeans(jagspost1, K, J, tpar, theta, "jags_3pl")
 ggsave('plots/jags_3pl_big.png')
 
 ## STAN
