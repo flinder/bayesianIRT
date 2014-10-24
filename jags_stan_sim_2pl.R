@@ -5,8 +5,9 @@ rm(list=ls())
 library(rjags)
 library(rstan)
 library(ggplot2)
+library(truncnorm)
 
-set.seed(2377343)
+set.seed(2377344)
 
 setwd("C:/Users/samsung/Dropbox/bd_irt/bayesianIRT")
 #setwd("C:/Users/flinder/Dropbox/bd_irt/bayesianIRT")
@@ -15,14 +16,14 @@ setwd("C:/Users/samsung/Dropbox/bd_irt/bayesianIRT")
 # Y[j, k] ~ Bern(pi[j, k])
 # pi[j, k] = 1/(1 + exp(-alpha[k] * (theta[j] - beta[k])))
 
-J <- 300 # Number of subjects
-K <- 20 # Number of items
+J <- 1000 # Number of subjects
+K <- 50 # Number of items
 N <- J * K # Number of observations
 theta <- rnorm(J, 0, 1) # Ability scores
 
 ## True item-parameter matrix
 # 1 alpha:Discrimination # 2 beta:Difficulty 
-tpar <- rbind(rlnorm(K, -0.3, 0.3), rnorm(K, 0.5, 0.7))
+tpar <- rbind(rlnorm(K, -1, 0.35), rnorm(K, 0, 1))
 
 # Draw data
 ip <- function(tpar, theta){
@@ -96,3 +97,34 @@ stanpost <- do.call(cbind,res.stan@sim$samples[[1]][- (J + 2 * K + 1)])
 # Plot posterior means
 plot_pmeans(stanpost, K, J, tpar, '2pl stan')
 ggsave('plots/stan_2pl.png')
+
+##
+# Hierarchical priors
+##
+
+## JAGS
+#inits <- list(list(zeta = rep(1, K), # For chain 1
+#                   "beta" = rnorm(K, 0, 1.5), 
+#                   "theta" = rnorm(J)
+#                   )
+#             )
+
+par.tosave <- c("alpha", "beta", "theta")
+
+data.jags <- list("J" = J, "K" = K, "Y" = Y)
+f <- function(){
+  jmod <- jags.model(file = "models/jags_2pl_h.txt", data = data.jags, 
+                     #inits = inits, 
+                     n.chains = 1, n.adapt = 500)
+  mcmcres <- coda.samples(model = jmod, variable.names = par.tosave, 
+                          n.iter = 2000, thin = 1)
+  list(jmod, mcmcres)
+}
+t.jags.h <- system.time(jags.res.h <- f())
+
+jagspost_h <- jags.res.h[[2]][1][[1]]
+jagspost_h[, 1:20] <- exp(jagspost_h[, 1:20])
+
+plot_pmeans(jagspost_h, K, J, tpar, "2pl jags hierarchical item prios") 
+ggsave("plots/jags_2pl_h.png")
+save.image('res_2pl.RData')

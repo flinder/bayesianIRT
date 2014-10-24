@@ -16,14 +16,14 @@ setwd("C:/Users/samsung/Dropbox/bd_irt/bayesianIRT")
 # pi[j, k] = gamma[k] + (1 - gamma[k])/(1 + exp(-alpha[k] * (theta[j] - beta[k])))
  
 
-J <- 300 # Number of subjects
-K <- 20 # Number of items
+J <- 3000 # Number of subjects
+K <- 200 # Number of items
 N <- J * K # Number of observations
 theta <- rnorm(J, 0, 1) # Ability scores
 
 ## True item-parameter matrix
 # 1 gamma:Guessing # 2 alpha:Discrimination # 3 beta:Difficulty 
-tpar <- rbind(rbeta(K, 3, 8), rlnorm(K, -0.3, 0.3), rnorm(K, 0.5, 0.7))
+tpar <- rbind(rbeta(K, 3, 8), rlnorm(K, -0.3, 0.3), rnorm(K, 0, 1))
 
 # Draw data
 ip <- function(tpar, theta){
@@ -78,7 +78,7 @@ jagspost1 <- jags.res[[2]][1][[1]]
 
 
 plot_pmeans(jagspost1, K, J, tpar, "jags_3pl")
-ggsave('plots/jags_3pl.png')
+ggsave('plots/jags_3pl_big.png')
 
 ## STAN
 fileName <- "models/stan_3pl_irt.txt"
@@ -101,7 +101,7 @@ stanpost <- do.call(cbind,stan.res@sim$samples[[1]][- (J + 3 * K + 1)])
 
 # Plot posterior means
 plot_pmeans(stanpost, K, J, tpar, "stan_3pl")
-ggsave('plots/stan_3pl.png')
+ggsave('plots/stan_3pl_big.png')
 
 ##########################
 # With hierarchical priors
