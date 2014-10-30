@@ -27,6 +27,7 @@ theta <- rnorm(J, 0, 1) # Ability scores
 ## True item-parameter matrix
 # 1 alpha:Discrimination # 2  beta:Difficulty # 3 gamma:Guessing 
 tpar <- rbind(rlnorm(K, -0.3, 0.3), rnorm(K, 0, 1), rbeta(K, 3, 8))
+rownames(tpar) <- c("alpha", "beta", "gamma")
 
 # Draw data
 ip <- function(tpar, theta){
@@ -102,5 +103,5 @@ f <- function(){
   list(jmod, mcmcres)
 }
 t.jags <- system.time(jags.res.h <- f())
-save(jags.res, file = "jags_res.RData")
+#save(jags.res, file = "jags_res.RData")
 #load("jags_res.RData")
