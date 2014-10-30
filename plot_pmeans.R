@@ -6,7 +6,7 @@ plot_pmeans <- function(mcmcres, K, J, tpar, theta, title = ""){
   pars <- gsub("\\[\\d+\\]", "", colnames(mcmcres))
   upars <- unique(pars)
   
-  # Work with stan hierarchical parametrization
+  # Work with stan manual hierarchical parametrization
   if(any(upars == "delta")){
     as <- grep("^alpha", colnames(mcmcres))
     mcmcres1 <- mcmcres
