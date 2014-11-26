@@ -8,8 +8,8 @@ library(ggplot2)
 
 set.seed(3439109)
 
-#setwd("C:/Users/samsung/Dropbox/bd_irt/bayesianIRT")
-setwd("C:/Users/flinder/Dropbox/bd_irt/bayesianIRT")
+setwd("C:/Users/samsung/Dropbox/bd_irt/bayesianIRT")
+#setwd("C:/Users/flinder/Dropbox/bd_irt/bayesianIRT")
 
 # Load plot function
 source("plot_pmeans.R")
@@ -89,6 +89,7 @@ stanpost <- do.call(cbind,stan.res@sim$samples[[1]][- (J + 3 * K + 1)])
 plot_pmeans(stanpost, K, J, tpar, "stan_3pl")
 ggsave('plots/stan_3pl_big.png')
 
+
 ##########################
 # With hierarchical priors
 ##########################
@@ -105,3 +106,26 @@ f <- function(){
 t.jags <- system.time(jags.res.h <- f())
 #save(jags.res, file = "jags_res.RData")
 #load("jags_res.RData")
+
+
+## Stan
+fileName <- "models/stan_3pl_irt_h.txt"
+model <- readChar(fileName, file.info(fileName)$size)
+y <- t(Y)
+data.stan <- list(n_student = ncol(y), n_item = nrow(y), y=y)
+
+
+t.stan <- system.time(
+  stan.res <- stan(model_code = model, model_name = "stan_3pl_h", data = data.stan, 
+                   iter = 1000, warmup = 100, chains = 1, verbose = TRUE)
+)
+
+
+stanpost <- do.call(cbind,stan.res@sim$samples[[1]][- (J + 3 * K + 1)])
+
+# Plot posterior means
+plot_pmeans(stanpost, K, J, tpar, "stan_3pl")
+ggsave('plots/stan_3pl_big.png')
+
+
+
