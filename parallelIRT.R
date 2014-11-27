@@ -10,20 +10,16 @@ library(truncnorm)
 library(doParallel)
 
 set.seed(2377344)
-set_cppo("fast")
 
 setwd("C:/Users/samsung/Dropbox/bd_irt/bayesianIRT")
 #setwd("C:/Users/flinder/Dropbox/bd_irt/bayesianIRT")
-
-# Load plot function
-source("plot_pmeans.R")
 
 ### Generate some data according to:
 # Y[j, k] ~ Bern(pi[j, k])
 # pi[j, k] = 1/(1 + exp(-alpha[k] * (theta[j] - beta[k])))
 
-J <- 200 # Number of subjects
-K <- 10 # Number of items
+J <- 1000 # Number of subjects
+K <- 50 # Number of items
 N <- J * K # Number of observations
 theta <- rnorm(J, 0, 1) # Ability scores
 
@@ -39,21 +35,22 @@ ip <- function(tpar, theta){
 ps <- apply(tpar, 2, ip, theta = theta)
 Y <- apply(ps, 2, rbinom, n = J, size = 1)
 
-### Parallel
+### Parallel (for item parameters)
 # Function run mcmc on single partition of the data
-fit <- function(data){
+fit <- function(data, n.adapt, n.iter){
   data.jags <- list("J" = nrow(data), "K" = ncol(data), "Y" = data)
   par.tosave <- c("alpha", "beta", "theta")
   mod <- jags.model(file = "models/jags_2pl_irt.txt", data = data.jags, 
-                    n.chains = 1, n.adapt = 1000)
+                    n.chains = 1, n.adapt = n.adapt)
   smpls <- coda.samples(model = mod, variable.names = par.tosave, 
-                        n.iter = 5000, thin = 1)
+                        n.iter = n.iter, thin = 1)
   smpls
 }
 
 # Function to partition the data and run mcmc on each partition
 # and combines them according to neiswanger2014asymptotically
-parMCMC <- function(data, nPart){
+# for now just gives item parameters
+parMCMC <- function(data, nPart, n.adapt = 1000, n.iter = 5000){
   CORES <- detectCores()
   cl <- makeCluster(CORES)
   registerDoParallel(cl)
@@ -65,13 +62,34 @@ parMCMC <- function(data, nPart){
     df
   }
   pdat <- lapply(pdat, reform)
-  mcmc.out <- foreach(i = pdat, .packages = c("rjags"), .export = "fit") %dopar% fit(i)
+  
+  mcmc.out <- foreach(i = pdat, .packages = c("rjags"), .export = "fit") %dopar% {
+    fit(i, n.adapt = n.adapt, n.iter = n.iter)}
+  
+  posteriors <- lapply(mcmc.out, function(x) x[[1]])
+  
+  ## Posterior combination functions for item parameters
+  # Parametric BvM
+  bvm <- function(posteriors){
+    posteriors <- lapply(posteriors, function(x) x[, !grepl("theta", colnames(x))])
+    vcms <- foreach(i = posteriors) %dopar% var(i)
+    ivcms <- foreach(i = vcms) %dopar% solve(i)
+    var.c <- solve(Reduce("+", ivcms))
+    means <- foreach(i = posteriors) %dopar% apply(i, 2, mean)
+    mprod <- foreach(i = ivcms, j = means) %dopar% (i %*% j)
+    mean.c <- var.c %*% Reduce("+", mprod)
+    list("post.means" = mean.c, "post.variance" = var.c)
+  }
+  
+  out <- list(combined = bvm(posteriors), separate = posteriors)
   stopCluster(cl)
-  mcmc.out
+  out
 }
 
 t.par <- system.time(par.mcmc <- parMCMC(Y, 4))
 
+
+par.mcmc[[1]]
 
 # Sequential
 ## JAGS
@@ -86,3 +104,12 @@ f <- function(){
   list(jmod, mcmcres)
 }
 t.seq <- system.time(jags.res <- f())
+
+
+m1 <- par.mcmc$combined$post.means
+a <- jags.res[[2]][[1]]
+a <- a[, !grepl("theta", colnames(a))]
+m2 <- apply(a, 2, mean)
+pdat <- data.frame(m1, m2, grp = factor(rep(c("alpha", "beta"), each = 50)))
+p <- ggplot(pdat, aes(m1, m2, col = grp))
+p + geom_point()
