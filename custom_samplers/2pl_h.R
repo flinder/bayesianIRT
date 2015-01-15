@@ -7,8 +7,8 @@ set.seed(23429437)
 # Y[j, k] ~ Bern(pi[j, k])
 # pi[j, k] = 1/(1 + exp(-alpha[k] * (theta[j] - beta[k])))
 
-J <- 500 # Number of subjects
-K <- 10 # Number of items
+J <- 300 # Number of subjects
+K <- 50 # Number of items
 N <- J * K # Number of observations
 theta <- rnorm(J, 0, 1) # Ability scores
 theta.t <- theta
@@ -103,12 +103,12 @@ g1 <- 1/2
 g2 <- 1/2
 
 # Tuning parameters
-phi_t  <- 1
-phi_z  <- matrix(c(.1, 0, 0, 1), nc = 2)
+phi_t  <- 0.05
+phi_z  <- matrix(c(.01, 0, 0, 0.01), nc = 2)
 
 
 # Number of mcmc iterations
-B <- 300
+B <- 10000
 
 # Result storage
 res <- matrix(NA, nr = B, nc = (J + 2 * K))
@@ -119,7 +119,7 @@ colnames(res) <- c(paste0("theta[", c(1:J), "]"),
 
 # MCMC Loop
 for(t in 1:B) {
-  cat("Iteration: ", t, "\r")
+  cat(t, "\r\r\r\r\r")
   # Step 1: M-H step for thetas
   theta.s <- rnorm(J, theta, phi_t)
   u <- runif(J)
